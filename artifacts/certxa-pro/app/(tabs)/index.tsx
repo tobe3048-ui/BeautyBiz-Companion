@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Feather } from '@expo/vector-icons';
 import { ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -29,8 +29,7 @@ export default function CalendarScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { bookings } = useBookingData();
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const { bookings, calendarDate: selectedDate, setCalendarDate } = useBookingData();
   const days = useMemo(() => {
     const monday = new Date(selectedDate);
     monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
@@ -50,7 +49,7 @@ export default function CalendarScreen() {
   const shiftWeek = (amount: number) => {
     const next = new Date(selectedDate);
     next.setDate(next.getDate() + amount * 7);
-    setSelectedDate(next);
+    setCalendarDate(next);
   };
 
   return (
@@ -75,7 +74,7 @@ export default function CalendarScreen() {
               {days.map((day) => {
                 const active = dateKey(day) === dateKey(selectedDate);
                 const today = dateKey(day) === dateKey(new Date());
-                return <TouchableOpacity key={dateKey(day)} testID={`calendar-day-${day.getDate()}`} onPress={() => setSelectedDate(day)} style={[styles.dayCell, active && { backgroundColor: colors.primary }]}><Text style={[styles.dayName, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>{day.toLocaleDateString('en-US', { weekday: 'short' })}</Text><Text style={[styles.dayNumber, { color: active ? colors.primaryForeground : colors.foreground }]}>{day.getDate()}</Text><View style={[styles.dayDot, { backgroundColor: active ? colors.primaryForeground : today ? colors.primary : colors.border }]} /></TouchableOpacity>;
+                return <TouchableOpacity key={dateKey(day)} testID={`calendar-day-${day.getDate()}`} onPress={() => setCalendarDate(day)} style={[styles.dayCell, active && { backgroundColor: colors.primary }]}><Text style={[styles.dayName, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>{day.toLocaleDateString('en-US', { weekday: 'short' })}</Text><Text style={[styles.dayNumber, { color: active ? colors.primaryForeground : colors.foreground }]}>{day.getDate()}</Text><View style={[styles.dayDot, { backgroundColor: active ? colors.primaryForeground : today ? colors.primary : colors.border }]} /></TouchableOpacity>;
               })}
             </View>
             <View style={styles.agendaHeading}>

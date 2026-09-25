@@ -36,6 +36,8 @@ type NewAppointment = Omit<AppointmentRecord, 'id'>;
 type BookingContextValue = {
   clients: ClientProfile[];
   bookings: AppointmentRecord[];
+  calendarDate: Date;
+  setCalendarDate: (date: Date) => void;
   addClient: (client: NewClient) => ClientProfile;
   addBooking: (appointment: NewAppointment) => void;
 };
@@ -45,10 +47,13 @@ const BookingContext = createContext<BookingContextValue | null>(null);
 export function BookingProvider({ children }: { children: ReactNode }) {
   const [clients, setClients] = useState<ClientProfile[]>(demoClients);
   const [bookings, setBookings] = useState<AppointmentRecord[]>([]);
+  const [calendarDate, setCalendarDate] = useState(new Date());
 
   const value = useMemo<BookingContextValue>(() => ({
     clients,
     bookings,
+    calendarDate,
+    setCalendarDate,
     addClient: (client) => {
       const record: ClientProfile = { ...client, id: `client-${Date.now()}` };
       setClients((current) => [record, ...current]);
@@ -57,7 +62,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     addBooking: (appointment) => {
       setBookings((current) => [{ ...appointment, id: `booking-${Date.now()}` }, ...current]);
     },
-  }), [clients, bookings]);
+  }), [clients, bookings, calendarDate]);
 
   return <BookingContext.Provider value={value}>{children}</BookingContext.Provider>;
 }

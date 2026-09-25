@@ -40,7 +40,7 @@ export default function BookingScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ day?: string; phone?: string }>();
-  const { clients, addClient, addBooking } = useBookingData();
+  const { clients, addClient, addBooking, calendarDate, setCalendarDate } = useBookingData();
   const initialPhone = (params.phone ?? '').replace(/\D/g, '').slice(0, 10);
   const [phone, setPhone] = useState(initialPhone);
   const [name, setName] = useState('');
@@ -49,7 +49,16 @@ export default function BookingScreen() {
   const [ticketClient, setTicketClient] = useState<ClientProfile | null>(null);
   const [serviceIndex, setServiceIndex] = useState(0);
   const [selectedTime, setSelectedTime] = useState('3:30 PM');
-  const selectedDate = useMemo(() => dateFromKey(params.day), [params.day]);
+  const [selectedDate, setSelectedDate] = useState(() => params.day ? dateFromKey(params.day) : calendarDate);
+  const weekDays = useMemo(() => {
+    const monday = new Date(selectedDate);
+    monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+    return Array.from({ length: 7 }, (_, index) => {
+      const day = new Date(monday);
+      day.setDate(monday.getDate() + index);
+      return day;
+    });
+  }, [selectedDate]);
   const topInset = Platform.OS === 'web' ? 67 : insets.top;
   const phoneDigits = phone.replace(/\D/g, '').slice(0, 10);
   const matches = phoneDigits.length >= 4
@@ -57,6 +66,11 @@ export default function BookingScreen() {
     : [];
   const service = services[serviceIndex];
   const clientCanContinue = selectedClient !== null || (phoneDigits.length === 10 && name.trim().length > 0);
+  const shiftWeek = (amount: number) => {
+    const next = new Date(selectedDate);
+    next.setDate(next.getDate() + amount * 7);
+    setSelectedDate(next);
+  };
 
   const pressNumber = (key: string) => {
     if (key === 'clear') {
@@ -126,6 +140,7 @@ export default function BookingScreen() {
       duration: service.duration,
       price: service.price,
     });
+    setCalendarDate(selectedDate);
     router.replace('/(tabs)');
   };
 
@@ -214,7 +229,29 @@ export default function BookingScreen() {
               <View style={{ flex: 1 }}><Text style={[styles.matchName, { color: colors.foreground }]}>{ticketClient?.name}</Text><Text style={[styles.matchPhone, { color: colors.mutedForeground }]}>{ticketClient ? formatPhone(ticketClient.phone) : ''}</Text></View>
               <TouchableOpacity testID="change-booking-client" onPress={() => setStage('client')}><Text style={[styles.changeLabel, { color: colors.primary }]}>Change</Text></TouchableOpacity>
             </View>
-            <View style={[styles.dateBanner, { backgroundColor: colors.secondary }]}><Feather name="calendar" size={16} color={colors.primary} /><Text style={[styles.dateText, { color: colors.foreground }]}>{titleDate}</Text><Text style={[styles.dateHint, { color: colors.mutedForeground }]}>from calendar</Text></View>
+            <View style={styles.monthRow}>
+              <View>
+                <Text style={[styles.monthTitle, { color: colors.foreground }]}>{selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</Text>
+                <Text style={[styles.monthSubtitle, { color: colors.mutedForeground }]}>Choose an appointment date</Text>
+              </View>
+              <View style={styles.monthActions}>
+                <TouchableOpacity testID="booking-previous-week" accessibilityLabel="Previous week" onPress={() => shiftWeek(-1)} style={styles.arrowButton}><Feather name="chevron-left" size={20} color={colors.foreground} /></TouchableOpacity>
+                <TouchableOpacity testID="booking-next-week" accessibilityLabel="Next week" onPress={() => shiftWeek(1)} style={styles.arrowButton}><Feather name="chevron-right" size={20} color={colors.foreground} /></TouchableOpacity>
+              </View>
+            </View>
+            <View style={[styles.weekCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              {weekDays.map((day) => {
+                const active = keyForDate(day) === keyForDate(selectedDate);
+                const today = keyForDate(day) === keyForDate(new Date());
+                return (
+                  <TouchableOpacity key={keyForDate(day)} testID={`booking-day-${day.getDate()}`} accessibilityRole="button" accessibilityState={{ selected: active }} onPress={() => setSelectedDate(day)} style={[styles.dayCell, active && { backgroundColor: colors.primary }]}>
+                    <Text style={[styles.dayName, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>{day.toLocaleDateString('en-US', { weekday: 'short' })}</Text>
+                    <Text style={[styles.dayNumber, { color: active ? colors.primaryForeground : colors.foreground }]}>{day.getDate()}</Text>
+                    <View style={[styles.dayDot, { backgroundColor: active ? colors.primaryForeground : today ? colors.primary : colors.border }]} />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
             <View style={styles.sectionHeading}><Text style={[styles.sectionLabel, { color: colors.foreground }]}>SERVICE</Text><Text style={[styles.sectionHint, { color: colors.mutedForeground }]}>Choose one</Text></View>
             <View style={styles.serviceList}>
               {services.map((item, index) => <TouchableOpacity key={item.name} testID={`booking-service-${item.name}`} onPress={() => setServiceIndex(index)} style={[styles.serviceRow, { backgroundColor: colors.card, borderColor: serviceIndex === index ? colors.primary : colors.border }]}><View style={[styles.serviceIcon, { backgroundColor: colors.secondary }]}><Feather name={item.icon} size={17} color={colors.primary} /></View><View style={{ flex: 1 }}><Text style={[styles.matchName, { color: colors.foreground }]}>{item.name}</Text><Text style={[styles.matchPhone, { color: colors.mutedForeground }]}>{item.duration}</Text></View><Text style={[styles.price, { color: colors.foreground }]}>{item.price}</Text><Feather name={serviceIndex === index ? 'check-circle' : 'circle'} size={18} color={serviceIndex === index ? colors.primary : colors.border} /></TouchableOpacity>)}
@@ -278,9 +315,16 @@ const styles = StyleSheet.create({
   footerNote: { textAlign: 'center', fontSize: 9, fontFamily: 'Inter_400Regular', marginTop: 8 },
   ticketClient: { borderWidth: 1, borderRadius: 15, padding: 11, flexDirection: 'row', alignItems: 'center', gap: 10 },
   changeLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold', paddingHorizontal: 4, paddingVertical: 8 },
-  dateBanner: { minHeight: 42, borderRadius: 12, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 11 },
-  dateText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
-  dateHint: { fontSize: 10, fontFamily: 'Inter_400Regular', marginLeft: 'auto' },
+  monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 18, marginBottom: 13 },
+  monthTitle: { fontSize: 20, letterSpacing: -0.4, fontFamily: 'Inter_600SemiBold' },
+  monthSubtitle: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 4 },
+  monthActions: { flexDirection: 'row', gap: 8 },
+  arrowButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  weekCard: { borderWidth: 1, borderRadius: 19, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 8, paddingVertical: 12 },
+  dayCell: { width: 39, alignItems: 'center', paddingVertical: 7, borderRadius: 14, gap: 7 },
+  dayName: { fontSize: 10, fontFamily: 'Inter_500Medium' },
+  dayNumber: { fontSize: 15, fontFamily: 'Inter_600SemiBold' },
+  dayDot: { width: 4, height: 4, borderRadius: 2 },
   sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 19, marginBottom: 9 },
   sectionHint: { fontSize: 10, fontFamily: 'Inter_400Regular' },
   serviceList: { gap: 7 },
