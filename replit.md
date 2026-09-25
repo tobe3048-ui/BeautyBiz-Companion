@@ -1,6 +1,6 @@
-# [Project name]
+# Certxa Pro
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Native booking and point-of-sale UX for independent health and beauty professionals.
 
 ## Run & Operate
 
@@ -22,19 +22,21 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/certxa-pro/app/` — Expo Router screens
+- `artifacts/certxa-pro/contexts/BookingContext.tsx` — in-memory booking and client state for the prototype
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Keep Certxa API, authentication, persistence, Stripe Connect, and Tap to Pay wiring out of scope unless the owner explicitly asks for it.
+- Demo bookings and client data are local preview state; payment screens must not imply that transactions are real.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Certxa Pro helps home-based, booth-renting, and mobile beauty professionals manage a calendar, clients, availability, bookings, and checkout.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- The owner is building the UX and will wire it to Certxa and payments; do not add integrations without a direct request.
 
 ## Gotchas
 

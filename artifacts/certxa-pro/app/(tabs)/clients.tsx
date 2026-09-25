@@ -5,25 +5,18 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
-
-type Client = { name: string; initials: string; lastVisit: string; service: string; visits: number; spend: string; color: 'green' | 'sand' | 'rose' };
-const starterClients: Client[] = [
-  { name: 'Alina Kim', initials: 'AK', lastVisit: 'Today · 9:00 AM', service: 'Brow shaping', visits: 12, spend: '$684', color: 'green' },
-  { name: 'Maya Rivera', initials: 'MR', lastVisit: 'Today · 11:30 AM', service: 'Signature facial', visits: 8, spend: '$920', color: 'sand' },
-  { name: 'Jordan Parker', initials: 'JP', lastVisit: 'Today · 2:00 PM', service: 'Mobile glam', visits: 5, spend: '$475', color: 'rose' },
-  { name: 'Sofia Chen', initials: 'SC', lastVisit: 'Sep 21 · 10:00 AM', service: 'Lash lift', visits: 16, spend: '$1,248', color: 'sand' },
-  { name: 'Nia Williams', initials: 'NW', lastVisit: 'Sep 18 · 3:30 PM', service: 'Signature facial', visits: 4, spend: '$390', color: 'green' },
-];
+import { useBookingData } from '@/contexts/BookingContext';
 
 export default function ClientsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [clients, setClients] = useState<Client[]>(starterClients);
+  const { clients, addClient } = useBookingData();
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<Client | null>(null);
+  const [selected, setSelected] = useState<(typeof clients)[number] | null>(null);
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
+  const [newPhone, setNewPhone] = useState('');
   const topInset = Platform.OS === 'web' ? 67 : insets.top;
   const filtered = useMemo(() => clients.filter((client) => client.name.toLowerCase().includes(search.toLowerCase())), [clients, search]);
 
@@ -31,9 +24,9 @@ export default function ClientsScreen() {
     const trimmed = newName.trim();
     if (!trimmed) return;
     const initials = trimmed.split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('');
-    const client: Client = { name: trimmed, initials: initials || 'NC', lastVisit: 'New client', service: 'No visits yet', visits: 0, spend: '$0', color: 'green' };
-    setClients((current) => [client, ...current]);
+    const client = addClient({ name: trimmed, initials: initials || 'NC', phone: newPhone.replace(/\D/g, ''), lastVisit: 'New client', service: 'No visits yet', visits: 0, spend: '$0', color: 'green' });
     setNewName('');
+    setNewPhone('');
     setAdding(false);
     setSelected(client);
   };
@@ -46,7 +39,7 @@ export default function ClientsScreen() {
           <View style={[styles.largeAvatar, { backgroundColor: colors.secondary }]}><Text style={[styles.largeInitials, { color: colors.primary }]}>{selected.initials}</Text></View>
           <Text style={[styles.detailName, { color: colors.foreground }]}>{selected.name}</Text>
           <Text style={[styles.detailSubtitle, { color: colors.mutedForeground }]}>{selected.visits} visits · {selected.spend} lifetime spend</Text>
-          <TouchableOpacity testID="book-client" style={[styles.bookButton, { backgroundColor: colors.primary }]} onPress={() => router.push('/(tabs)')}><Feather name="calendar" size={17} color={colors.primaryForeground} /><Text style={[styles.bookText, { color: colors.primaryForeground }]}>Book appointment</Text></TouchableOpacity>
+          <TouchableOpacity testID="book-client" style={[styles.bookButton, { backgroundColor: colors.primary }]} onPress={() => router.push({ pathname: '/booking', params: { phone: selected.phone } })}><Feather name="calendar" size={17} color={colors.primaryForeground} /><Text style={[styles.bookText, { color: colors.primaryForeground }]}>Book appointment</Text></TouchableOpacity>
           <Text style={[styles.sectionTitle, { color: colors.foreground, marginTop: 31 }]}>Recent activity</Text>
           <View style={[styles.historyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={[styles.historyIcon, { backgroundColor: colors.secondary }]}><Feather name="star" size={16} color={colors.primary} /></View>
@@ -66,6 +59,7 @@ export default function ClientsScreen() {
             <View style={[styles.addPanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Text style={[styles.itemTitle, { color: colors.foreground, marginBottom: 10 }]}>Add a client</Text>
               <TextInput testID="new-client-name" autoFocus value={newName} onChangeText={setNewName} placeholder="First and last name" placeholderTextColor={colors.mutedForeground} style={[styles.nameInput, { color: colors.foreground, borderColor: colors.border }]} returnKeyType="done" onSubmitEditing={saveClient} />
+              <TextInput testID="new-client-phone" value={newPhone} onChangeText={setNewPhone} placeholder="Phone number (optional)" placeholderTextColor={colors.mutedForeground} keyboardType="phone-pad" style={[styles.nameInput, { color: colors.foreground, borderColor: colors.border, marginTop: 9 }]} returnKeyType="done" onSubmitEditing={saveClient} />
               <TouchableOpacity testID="save-client" onPress={saveClient} style={[styles.saveButton, { backgroundColor: colors.primary }]}><Text style={[styles.saveText, { color: colors.primaryForeground }]}>Save client</Text></TouchableOpacity>
             </View>
           )}

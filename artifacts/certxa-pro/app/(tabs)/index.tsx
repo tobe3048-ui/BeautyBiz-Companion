@@ -4,6 +4,7 @@ import { ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View, Platfo
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
+import { useBookingData } from '@/contexts/BookingContext';
 
 type Appointment = { time: string; name: string; service: string; duration: string; price: string; note?: string };
 
@@ -28,13 +29,8 @@ export default function CalendarScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { bookings } = useBookingData();
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [appointmentsByDay, setAppointmentsByDay] = useState<Record<string, Appointment[]>>({
-    [dateKey(new Date())]: initialAppointments,
-  });
-  const [adding, setAdding] = useState(false);
-  const [newService, setNewService] = useState('Brow shaping');
-  const [newTime, setNewTime] = useState('4:00 PM');
   const days = useMemo(() => {
     const monday = new Date(selectedDate);
     monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
@@ -45,7 +41,10 @@ export default function CalendarScreen() {
     });
   }, [selectedDate]);
   const todayIsSelected = dateKey(selectedDate) === dateKey(new Date());
-  const appointments = appointmentsByDay[dateKey(selectedDate)] ?? [];
+  const appointments = [
+    ...(todayIsSelected ? initialAppointments : []),
+    ...bookings.filter((booking) => booking.dateKey === dateKey(selectedDate)),
+  ].sort((a, b) => timeValue(a.time) - timeValue(b.time));
   const topInset = Platform.OS === 'web' ? 67 : insets.top;
 
   const shiftWeek = (amount: number) => {
@@ -54,51 +53,9 @@ export default function CalendarScreen() {
     setSelectedDate(next);
   };
 
-  const addAppointment = () => {
-    const newItem: Appointment = {
-      time: newTime,
-      name: 'New guest',
-      service: newService,
-      duration: newService === 'Signature facial' ? '1 hr 15 min' : '45 min',
-      price: newService === 'Signature facial' ? '$125' : '$48',
-    };
-    setAppointmentsByDay((current) => ({
-      ...current,
-      [dateKey(selectedDate)]: [...(current[dateKey(selectedDate)] ?? []), newItem].sort((a, b) => timeValue(a.time) - timeValue(b.time)),
-    }));
-    setAdding(false);
-  };
-
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: topInset }]}>
       <StatusBar barStyle="dark-content" />
-      {adding ? (
-        <View style={styles.editorPage}>
-          <View style={styles.headerLine}>
-            <TouchableOpacity testID="appointment-back" onPress={() => setAdding(false)} style={styles.iconButton}>
-              <Feather name="arrow-left" size={21} color={colors.foreground} />
-            </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: colors.foreground }]}>New appointment</Text>
-            <View style={{ width: 42 }} />
-          </View>
-          <Text style={[styles.eyebrow, { color: colors.mutedForeground }]}>{selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()}</Text>
-          <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Choose a service</Text>
-          {['Brow shaping', 'Signature facial'].map((service) => (
-            <TouchableOpacity key={service} testID={`service-${service}`} onPress={() => setNewService(service)} style={[styles.choiceRow, { backgroundColor: colors.card, borderColor: newService === service ? colors.primary : colors.border }]}>
-              <View style={[styles.choiceIcon, { backgroundColor: colors.secondary }]}><Feather name="star" size={17} color={colors.primary} /></View>
-              <View style={{ flex: 1 }}><Text style={[styles.rowTitle, { color: colors.foreground }]}>{service}</Text><Text style={[styles.rowSub, { color: colors.mutedForeground }]}>{service === 'Brow shaping' ? '45 min · $48' : '1 hr 15 min · $125'}</Text></View>
-              <Feather name={newService === service ? 'check-circle' : 'circle'} size={19} color={newService === service ? colors.primary : colors.border} />
-            </TouchableOpacity>
-          ))}
-          <Text style={[styles.fieldLabel, { color: colors.foreground, marginTop: 22 }]}>Start time</Text>
-          <View style={styles.timeOptions}>
-          {['3:30 PM', '4:00 PM', '4:30 PM'].map((time) => <TouchableOpacity key={time} testID={`time-${time}`} onPress={() => setNewTime(time)} style={[styles.timeChip, { backgroundColor: newTime === time ? colors.primary : colors.card, borderColor: newTime === time ? colors.primary : colors.border }]}><Text style={[styles.timeText, { color: newTime === time ? colors.primaryForeground : colors.foreground }]}>{time}</Text></TouchableOpacity>)}
-          </View>
-          <View style={[styles.guestNote, { backgroundColor: colors.accent }]}><Feather name="info" size={16} color={colors.accentForeground} /><Text style={[styles.noteText, { color: colors.accentForeground }]}>You can add guest details and notes after connecting your Certxa account.</Text></View>
-          <TouchableOpacity testID="save-appointment" onPress={addAppointment} style={[styles.primaryButton, { backgroundColor: colors.primary }]}><Text style={[styles.primaryButtonText, { color: colors.primaryForeground }]}>Add appointment</Text></TouchableOpacity>
-        </View>
-      ) : (
-        <>
           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
             <View style={styles.topBar}>
               <View>
@@ -147,9 +104,7 @@ export default function CalendarScreen() {
               <Text style={[styles.summaryAmount, { color: colors.primary }]}>{todayIsSelected ? '$268' : '$0'}</Text>
             </View>
           </ScrollView>
-          <TouchableOpacity testID="add-appointment" onPress={() => setAdding(true)} style={[styles.fab, { backgroundColor: colors.primary }]}><Feather name="plus" size={25} color={colors.primaryForeground} /></TouchableOpacity>
-        </>
-      )}
+          <TouchableOpacity testID="add-appointment" onPress={() => router.push({ pathname: '/booking', params: { day: dateKey(selectedDate) } })} style={[styles.fab, { backgroundColor: colors.primary }]}><Feather name="plus" size={25} color={colors.primaryForeground} /></TouchableOpacity>
     </View>
   );
 }
@@ -195,18 +150,4 @@ const styles = StyleSheet.create({
   summaryTitle: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
   summaryAmount: { fontSize: 17, fontFamily: 'Inter_700Bold' },
   fab: { position: 'absolute', right: 22, bottom: Platform.OS === 'web' ? 104 : 28, width: 55, height: 55, borderRadius: 28, alignItems: 'center', justifyContent: 'center', elevation: 4 },
-  editorPage: { flex: 1, paddingHorizontal: 20, paddingTop: 12 },
-  headerLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 30 },
-  iconButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontFamily: 'Inter_600SemiBold' },
-  fieldLabel: { fontSize: 15, fontFamily: 'Inter_600SemiBold', marginTop: 24, marginBottom: 12 },
-  choiceRow: { borderWidth: 1.5, borderRadius: 16, padding: 13, flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 9 },
-  choiceIcon: { width: 38, height: 38, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-  timeOptions: { flexDirection: 'row', gap: 9 },
-  timeChip: { flex: 1, borderWidth: 1, borderRadius: 13, paddingVertical: 13, alignItems: 'center' },
-  timeText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
-  guestNote: { flexDirection: 'row', gap: 9, padding: 13, borderRadius: 13, marginTop: 26 },
-  noteText: { flex: 1, fontSize: 11, fontFamily: 'Inter_500Medium', lineHeight: 16 },
-  primaryButton: { height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 'auto', marginBottom: 26 },
-  primaryButtonText: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
 });
