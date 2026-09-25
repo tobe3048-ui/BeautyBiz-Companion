@@ -4,6 +4,13 @@ import { Platform, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, Vi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 
+const keypadRows = [
+  ['1', '2', '3'],
+  ['4', '5', '6'],
+  ['7', '8', '9'],
+  ['.', '0', 'delete'],
+] as const;
+
 type Sale = { amount: string; label: string; time: string };
 
 function dollars(digits: string) {
@@ -89,7 +96,15 @@ export default function CheckoutScreen() {
           </View>
         </View>
         <View style={styles.keypad}>
-          {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'delete'].map((key) => <TouchableOpacity key={key} testID={`key-${key}`} onPress={() => pressDigit(key)} style={[styles.keyButton, { backgroundColor: colors.card, borderColor: colors.border }]}><Text style={[styles.keyText, { color: colors.foreground }]}>{key === 'delete' ? '' : key}</Text>{key === 'delete' && <Feather name="delete" size={20} color={colors.foreground} />}</TouchableOpacity>)}
+          {keypadRows.map((row, rowIndex) => (
+            <View key={`key-row-${rowIndex}`} style={[styles.keypadRow, rowIndex < keypadRows.length - 1 && styles.keypadRowSpacing]}>
+              {row.map((key, keyIndex) => (
+                <TouchableOpacity key={key} testID={`key-${key}`} onPress={() => pressDigit(key)} style={[styles.keyButton, keyIndex < row.length - 1 && styles.keyButtonSpacing, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  {key === 'delete' ? <Feather name="delete" size={20} color={colors.foreground} /> : <Text style={[styles.keyText, { color: colors.foreground }]}>{key}</Text>}
+                </TouchableOpacity>
+              ))}
+            </View>
+          ))}
         </View>
         <TouchableOpacity testID="tap-to-pay" onPress={() => { setTapping(true); setPaid(false); }} disabled={Number(digits) === 0} style={[styles.tapButton, { backgroundColor: Number(digits) === 0 ? colors.muted : colors.primary }]}><Feather name="radio" size={18} color={Number(digits) === 0 ? colors.mutedForeground : colors.primaryForeground} /><Text style={[styles.tapButtonText, { color: Number(digits) === 0 ? colors.mutedForeground : colors.primaryForeground }]}>Tap to Pay</Text><Feather name="arrow-up-right" size={16} color={Number(digits) === 0 ? colors.mutedForeground : colors.primaryForeground} /></TouchableOpacity>
         <View style={styles.recentHeader}><Text style={[styles.sectionTitle, { color: colors.foreground }]}>Recent payments</Text></View>
@@ -115,8 +130,11 @@ const styles = StyleSheet.create({
   quickChip: { flex: 1, borderWidth: 1, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 9, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 4 },
   quickTitle: { fontSize: 11, fontFamily: 'Inter_500Medium' },
   quickPrice: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
-  keypad: { marginTop: 11, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  keyButton: { width: '31.8%', height: 48, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center', flexGrow: 1 },
+  keypad: { marginTop: 11 },
+  keypadRow: { flexDirection: 'row', alignItems: 'center' },
+  keypadRowSpacing: { marginBottom: 8 },
+  keyButton: { flex: 1, height: 56, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  keyButtonSpacing: { marginRight: 8 },
   keyText: { fontSize: 18, fontFamily: 'Inter_500Medium' },
   tapButton: { height: 54, marginTop: 11, borderRadius: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 11 },
   tapButtonText: { fontSize: 14, fontFamily: 'Inter_600SemiBold', flex: 1, textAlign: 'center' },
