@@ -1,0 +1,1 @@
+- [Stripe Terminal Expo setup](stripe-terminal-expo.md) — use Stripe’s Expo config plugin and a custom native build; Expo Go cannot provide the Terminal native module.

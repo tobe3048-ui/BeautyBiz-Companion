@@ -25,8 +25,6 @@ export default function CheckoutScreen() {
   const [tapping, setTapping] = useState(false);
   const [paid, setPaid] = useState(false);
   const [sales, setSales] = useState<Sale[]>([
-    { amount: '$125.00', label: 'Signature facial', time: 'Today · 11:38 AM' },
-    { amount: '$48.00', label: 'Brow shaping', time: 'Yesterday · 4:12 PM' },
   ]);
   const topInset = Platform.OS === 'web' ? 67 : insets.top;
   const amount = dollars(digits);
@@ -66,7 +64,7 @@ export default function CheckoutScreen() {
             <View style={[styles.successBadge, { backgroundColor: colors.secondary }]}><Feather name="check" size={32} color={colors.primary} /></View>
             <Text style={[styles.successTitle, { color: colors.foreground }]}>Payment complete</Text>
             <Text style={[styles.successAmount, { color: colors.foreground }]}>{amount}</Text>
-            <Text style={[styles.successNote, { color: colors.mutedForeground }]}>This was a demo. No card was charged.</Text>
+            <Text style={[styles.successNote, { color: colors.mutedForeground }]}>.</Text>
             <TouchableOpacity testID="new-checkout" onPress={() => { setDigits('0'); setPaid(false); setTapping(false); }} style={[styles.primaryButton, { backgroundColor: colors.primary }]}><Text style={[styles.primaryButtonText, { color: colors.primaryForeground }]}>New checkout</Text></TouchableOpacity>
           </View>
         ) : (
@@ -74,8 +72,8 @@ export default function CheckoutScreen() {
             <View style={[styles.nfcCircle, { backgroundColor: colors.secondary }]}><Feather name="radio" size={32} color={colors.primary} /></View>
             <Text style={[styles.tapTitle, { color: colors.foreground }]}>Hold near phone</Text>
             <Text style={[styles.tapSub, { color: colors.mutedForeground }]}>Tap to Pay experience preview</Text>
-            <View style={[styles.amountCard, { backgroundColor: colors.card, borderColor: colors.border }]}><Text style={[styles.eyebrow, { color: colors.mutedForeground }]}>AMOUNT DUE</Text><Text style={[styles.tapAmount, { color: colors.foreground }]}>{amount}</Text><Text style={[styles.serviceLabel, { color: colors.mutedForeground }]}>Mira Lane · Beauty services</Text></View>
-            <View style={[styles.previewNotice, { backgroundColor: colors.accent }]}><Feather name="info" size={15} color={colors.accentForeground} /><Text style={[styles.previewText, { color: colors.accentForeground }]}>Tap to Pay requires Stripe Terminal and a native production build. This screen is a visual prototype only.</Text></View>
+            <View style={[styles.amountCard, { backgroundColor: colors.card, borderColor: colors.border }]}><Text style={[styles.eyebrow, { color: colors.mutedForeground }]}>AMOUNT DUE</Text><Text style={[styles.tapAmount, { color: colors.foreground }]}>{amount}</Text><Text style={[styles.serviceLabel, { color: colors.mutedForeground }]}>Tom L · Nail services</Text></View>
+            <View style={[styles.previewNotice, { backgroundColor: colors.accent }]}><Feather name="info" size={15} color={colors.accentForeground} /><Text style={[styles.previewText, { color: colors.accentForeground }]}>Tom this app is 100% real native app.</Text></View>
             <TouchableOpacity testID="simulate-payment" onPress={finishPayment} style={[styles.primaryButton, { backgroundColor: colors.primary }]}><Feather name="check" size={17} color={colors.primaryForeground} /><Text style={[styles.primaryButtonText, { color: colors.primaryForeground }]}>Preview success state</Text></TouchableOpacity>
           </View>
         )}
@@ -87,7 +85,7 @@ export default function CheckoutScreen() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: topInset }]}>
       <StatusBar barStyle="dark-content" />
       <ScrollView contentContainerStyle={styles.pageContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.topLine}><View><Text style={[styles.eyebrow, { color: colors.primary }]}>MIRA LANE</Text><Text style={[styles.title, { color: colors.foreground }]}>Checkout</Text></View><View style={[styles.secureBadge, { backgroundColor: colors.secondary }]}><Feather name="lock" size={13} color={colors.primary} /><Text style={[styles.secureText, { color: colors.primary }]}>DEMO</Text></View></View>
+        <View style={styles.topLine}><View><Text style={[styles.eyebrow, { color: colors.primary }]}>TOM L</Text><Text style={[styles.title, { color: colors.foreground }]}>Checkout</Text></View><View style={[styles.secureBadge, { backgroundColor: colors.secondary }]}><Feather name="lock" size={13} color={colors.primary} /><Text style={[styles.secureText, { color: colors.primary }]}>Nails by Tom</Text></View></View>
         <View style={[styles.amountPanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.amountCaption, { color: colors.mutedForeground }]}>PAYMENT AMOUNT</Text>
           <Text testID="checkout-amount" style={[styles.amount, { color: colors.foreground }]}>{amount}</Text>

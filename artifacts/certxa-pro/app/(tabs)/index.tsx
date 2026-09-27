@@ -9,9 +9,9 @@ import { useBookingData } from '@/contexts/BookingContext';
 type Appointment = { time: string; name: string; service: string; duration: string; price: string; note?: string };
 
 const initialAppointments: Appointment[] = [
-  { time: '9:00 AM', name: 'Alina K.', service: 'Brow shaping', duration: '45 min', price: '$48' },
-  { time: '11:30 AM', name: 'Maya R.', service: 'Signature facial', duration: '1 hr 15 min', price: '$125' },
-  { time: '2:00 PM', name: 'Jordan P.', service: 'Mobile glam', duration: '1 hr', price: '$95', note: 'Travel appointment' },
+  { time: '9:00 AM', name: 'Alina K.', service: 'Delux Pedicure', duration: '45 min', price: '$55' },
+  { time: '11:30 AM', name: 'Maya R.', service: 'Signature Manicure', duration: '35 min', price: '$25' },
+  { time: '2:00 PM', name: 'Jordan P.', service: 'Gel-X Set', duration: '70 min', price: '$95', note: 'Travel appointment' },
 ];
 
 function dateKey(date: Date) {
@@ -58,10 +58,10 @@ export default function CalendarScreen() {
           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
             <View style={styles.topBar}>
               <View>
-                <Text style={[styles.eyebrow, { color: colors.primary }]}>YOUR STUDIO</Text>
-                <Text style={[styles.brandTitle, { color: colors.foreground }]}>Mira Lane</Text>
+                <Text style={[styles.eyebrow, { color: colors.primary }]}>Nails by Tom</Text>
+                <Text style={[styles.brandTitle, { color: colors.foreground }]}>Tom Lam</Text>
               </View>
-              <View testID="calendar-profile" style={[styles.profileButton, { backgroundColor: colors.secondary }]}><Text style={[styles.profileInitials, { color: colors.primary }]}>ML</Text></View>
+              <View testID="calendar-profile" style={[styles.profileButton, { backgroundColor: colors.secondary }]}><Text style={[styles.profileInitials, { color: colors.primary }]}>TL</Text></View>
             </View>
             <View style={styles.monthRow}>
               <View><Text style={[styles.monthTitle, { color: colors.foreground }]}>{selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</Text><Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Your schedule at a glance</Text></View>

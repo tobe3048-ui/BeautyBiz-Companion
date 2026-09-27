@@ -19,7 +19,21 @@
     "web": {
       "favicon": "./assets/images/icon.png"
     },
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router",
+      [
+        "@stripe/stripe-terminal-react-native",
+        {
+          "bluetoothBackgroundMode": true,
+          "locationWhenInUsePermission": "Location access is required to accept payments.",
+          "bluetoothPeripheralPermission": "Bluetooth access is required to connect to supported card readers.",
+          "bluetoothAlwaysUsagePermission": "This app uses Bluetooth to connect to supported card readers.",
+          "localNetworkUsagePermission": "This app uses the local WiFi network to connect to supported card readers.",
+          "appDelegate": true,
+          "tapToPayCheck": true
+        }
+      ]
+    ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
