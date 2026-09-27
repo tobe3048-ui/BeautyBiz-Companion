@@ -11,9 +11,11 @@ import {
   Inter_700Bold,
   useFonts,
 } from '@expo-google-fonts/inter';
-import { Stack } from 'expo-router';
+import { Redirect, Stack, usePathname, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { BookingProvider } from '@/contexts/BookingContext';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { CertxaTerminalProvider } from '@/components/CertxaTerminalProvider';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -21,11 +23,26 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
+  const { isLoading, isAuthenticated } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) return;
+    const isLoginRoute = pathname === '/login';
+    if (!isAuthenticated && !isLoginRoute) router.replace('/login');
+    if (isAuthenticated && isLoginRoute) router.replace('/(tabs)');
+  }, [isAuthenticated, isLoading, pathname, router]);
+
+  if (isLoading) return null;
+  if (!isAuthenticated && pathname !== '/login') return <Redirect href="/login" />;
+
   return (
     <Stack screenOptions={{ headerBackTitle: 'Back' }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="booking" options={{ headerShown: false, presentation: 'card' }} />
       <Stack.Screen name="ai" options={{ headerShown: false, presentation: 'card' }} />
+      <Stack.Screen name="login" options={{ headerShown: false }} />
     </Stack>
   );
 }
@@ -50,13 +67,17 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <BookingProvider>
-            <GestureHandlerRootView>
-              <KeyboardProvider>
-                <RootLayoutNav />
-              </KeyboardProvider>
-            </GestureHandlerRootView>
-          </BookingProvider>
+          <AuthProvider>
+            <CertxaTerminalProvider>
+              <BookingProvider>
+                <GestureHandlerRootView>
+                  <KeyboardProvider>
+                    <RootLayoutNav />
+                  </KeyboardProvider>
+                </GestureHandlerRootView>
+              </BookingProvider>
+            </CertxaTerminalProvider>
+          </AuthProvider>
         </QueryClientProvider>
       </ErrorBoundary>
     </SafeAreaProvider>

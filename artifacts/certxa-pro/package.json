@@ -55,6 +55,7 @@
     "zod-validation-error": "^3.4.0"
   },
   "dependencies": {
-    "@stripe/stripe-terminal-react-native": "0.0.1-beta.33"
+    "@stripe/stripe-terminal-react-native": "0.0.1-beta.33",
+    "expo-secure-store": "~15.0.8"
   }
 }
