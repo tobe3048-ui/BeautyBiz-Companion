@@ -1,0 +1,80 @@
+The Replit assessment is directionally correct, but its “currently missing” section is inaccurate for your SaaS backend. Certxa already has most of the Stripe Connect/Terminal infrastructure.
+
+## Send this to Replit
+
+> Use the existing Certxa production API at **https://certxa.com**. Do not create Replit-hosted Stripe routes and do not put any Stripe secret key in the Expo app.
+>
+> **Authentication**
+>
+> - Login endpoint: **POST https://certxa.com/api/solo/login**
+> - Request body: `{ "email": "...", "password": "..." }`
+> - Response: `{ "token": "...", "user": { ... } }`
+> - Store the token in Expo SecureStore.
+> - Send it on every API request as `Authorization: Bearer <token>`.
+> - Configure `EXPO_PUBLIC_API_BASE_URL=https://certxa.com`.
+>
+> **Stripe Terminal endpoints**
+>
+> 1. **POST /api/payments/terminal/connection-token**
+>    - No request body required.
+>    - Response: `{ "secret": "pst_..." }`.
+>
+> 2. **GET /api/payments/terminal/location**
+>    - Response: `{ "locationId": "tml_..." }`.
+>    - Use this location when connecting the Tap to Pay reader.
+>
+> 3. **POST /api/payments/terminal/create-payment-intent**
+>    - Existing request shape:
+>      `{ "amountCents": 4800, "currency": "usd", "appointmentId": 123, "clientName": "...", "method": "tap_to_pay", "tipCents": 0, "discountCents": 0, "priorTenderedCents": 0 }`
+>    - Response: `{ "clientSecret": "pi_..._secret_...", "paymentIntentId": "pi_...", "amount": 4800, "currency": "usd" }`.
+>
+> 4. **POST /api/payments/terminal/capture-payment-intent**
+>    - Request: `{ "paymentIntentId": "pi_...", "method": "tap_to_pay" }`.
+>    - The PaymentIntent uses manual capture, so this backend call is required after native collection/confirmation.
+>
+> 5. **POST /api/payments/terminal/cancel-payment-intent**
+>    - Request: `{ "paymentIntentId": "pi_..." }`.
+>
+> **Connect model**
+>
+> - Certxa uses **direct charges**.
+> - Both the Terminal connection token and PaymentIntent are created in the professional’s connected-account context.
+> - Certxa currently takes a fixed application fee of 60 cents when the transaction is large enough.
+> - The backend derives the connected account from the authenticated user/store. The app must never submit a connected account ID.
+>
+> **Native checkout sequence**
+>
+> 1. Log in and securely store the Certxa bearer token.
+> 2. Mount StripeTerminalProvider with a token provider that calls the existing connection-token endpoint.
+> 3. Initialize Terminal.
+> 4. Get the Terminal location from the location endpoint.
+> 5. Discover and connect the Tap to Pay reader using that location.
+> 6. Create the PaymentIntent through the Certxa backend.
+> 7. Retrieve the PaymentIntent in the native SDK using the returned client secret.
+> 8. Collect the card-present payment method.
+> 9. Confirm/process it in the native SDK.
+> 10. Call the Certxa capture endpoint.
+> 11. Cancel unfinished PaymentIntents when appropriate.
+>
+> Use USD and United States configuration unless Certxa provides a different business-country value. A custom Expo development/EAS build is required; Expo Go and web preview cannot execute Stripe Terminal.
+
+## What already exists
+
+- Stateless email/password mobile login and bearer-token issuance are implemented in [`solo-mobile.ts`](artifacts/api-server/src/routes/solo-mobile.ts:20).
+- Bearer tokens are bridged into the normal Certxa session context in [`attachAuthContext`](artifacts/api-server/src/middleware/permissions.ts:35).
+- The authenticated store is resolved server-side in [`resolveSessionStoreId()`](artifacts/api-server/src/lib/sessionStore.ts:16).
+- The Terminal location endpoint is implemented in [`stripeConnect.ts`](artifacts/api-server/src/routes/stripeConnect.ts:1074).
+- The connection-token endpoint is implemented in [`stripeConnect.ts`](artifacts/api-server/src/routes/stripeConnect.ts:1094).
+- PaymentIntent creation is implemented in [`stripeConnect.ts`](artifacts/api-server/src/routes/stripeConnect.ts:1114).
+- The direct-charge account context and application fee are implemented in [`createTerminalPaymentIntent()`](artifacts/api-server/src/lib/stripeConnect.ts:311).
+- Certxa’s existing native app already mounts [`StripeTerminalProvider`](apps/certxa-owner/app/_layout.tsx:220) and contains a real payment flow in [`useTerminalPayment.ts`](apps/certxa-owner/lib/useTerminalPayment.ts:95).
+
+## Important backend gaps
+
+Two parts of Replit’s warning are valid and should be addressed before treating the new app as production-ready:
+
+1. **The backend currently trusts the submitted amount.** It checks that the appointment belongs to the authenticated store, but it does not recompute the total from appointment services, add-ons, taxes, discounts, and tips. That gap is visible in [`stripeConnect.ts`](artifacts/api-server/src/routes/stripeConnect.ts:1119). Replit should not attempt to solve this client-side; the Certxa backend must calculate or validate the chargeable amount.
+
+2. **Webhook coverage is incomplete.** The Connect webhook currently finalizes `payment_intent.succeeded`, but does not update internal records for failed/canceled intents, refunds, or disputes; see [`stripeConnectWebhook.ts`](artifacts/api-server/src/routes/stripeConnectWebhook.ts:264). The production Stripe webhook should point to **https://certxa.com/api/stripe/connect-webhook**, include events from connected accounts, and have `STRIPE_CONNECT_WEBHOOK_SECRET` configured.
+
+Therefore, Replit can wire the native app to the existing API now, but amount authority and full webhook-driven payment status still require backend hardening.
